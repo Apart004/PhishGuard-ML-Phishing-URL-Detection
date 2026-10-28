@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PhishGuard | URL Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-icon">PG</span>
+      <span>PhishGuard<span class="brand-sub">ML URL DETECTION</span></span>
+    </a>
+    <span class="offline"><span class="dot"></span> Offline URL analysis</span>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">URL SECURITY CHECK</div>
+      <h1>Spot suspicious links<br><span>before you trust them.</span></h1>
+      <p>Analyze URL patterns with a machine-learning-powered detector. The submitted website is not opened.</p>
+    </section>
+
+    <section class="panel checker">
+      <form method="post">
+        <label for="url">Website URL</label>
+        <div class="input-row">
+          <input id="url" name="url" type="text" placeholder="https://example.com/login"
+                 value="{{ submitted_url }}" required maxlength="2048" autocomplete="url">
+          <button type="submit">Analyze URL <span aria-hidden="true">→</span></button>
+        </div>
+        <p class="hint">Enter a complete URL starting with http:// or https://</p>
+      </form>
+      {% if error %}
+        <div class="notice error" role="alert">{{ error }}</div>
+      {% endif %}
+    </section>
+
+    {% if result %}
+      {% set verdict = result.get('fraud_verdict', 'REVIEW') %}
+      {% if verdict == 'FRAUD' %}
+        {% set verdict_class = 'fraud' %}
+        {% set verdict_title = 'Potential phishing detected' %}
+        {% set verdict_copy = 'Treat this link as suspicious. Do not enter credentials or payment details.' %}
+      {% elif verdict == 'LEGITIMATE' %}
+        {% set verdict_class = 'legitimate' %}
+        {% set verdict_title = 'Classified as legitimate' %}
+        {% set verdict_copy = 'The model did not identify enough risk signals to classify this URL as phishing.' %}
+      {% else %}
+        {% set verdict_class = 'review' %}
+        {% set verdict_title = 'Further review recommended' %}
+        {% set verdict_copy = 'The URL is inconclusive based on its text patterns alone.' %}
+      {% endif %}
+      <section class="panel result {{ verdict_class }}">
+        <div class="result-top">
+          <div>
+            <div class="eyebrow">ANALYSIS RESULT</div>
+            <h2>{{ verdict_title }}</h2>
+            <p>{{ verdict_copy }}</p>
+          </div>
+          <div class="verdict-pill">{{ verdict }}</div>
+        </div>
+        <div class="score-grid">
+          <div class="score-card">
+            <span class="score-label">Reported phishing probability</span>
+            <strong>{{ "%.1f"|format((result.get('fraud_probability', 0)|float) * 100) }}%</strong>
+          </div>
+          <div class="score-card">
+            <span class="score-label">Analysis mode</span>
+            <strong class="mode">{{ result.get('analysis_mode', 'offline') }}</strong>
+          </div>
+        </div>
+        <div class="reasons">
+          <h3>Signals behind this result</h3>
+          {% set reasons = result.get('top_reasons', []) %}
+          {% if reasons %}
+            <ul>
+              {% for reason in reasons %}
+                <li><span class="reason-mark">›</span>{{ reason }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p>No individual reasons were returned by the detector.</p>
+          {% endif %}
+        </div>
+        <div class="checked-url">
+          <span>Checked URL</span>
+          <code>{{ result.get('url', submitted_url) }}</code>
+        </div>
+      </section>
+    {% endif %}
+
+    <section class="info-grid">
+      <article class="info-card">
+        <div class="info-symbol">01</div>
+        <h3>URL pattern analysis</h3>
+        <p>Examines characteristics such as domain structure, brand placement, login terms and URL formatting.</p>
+      </article>
+      <article class="info-card">
+        <div class="info-symbol">02</div>
+        <h3>Explainable result</h3>
+        <p>Shows a verdict, a reported probability and the strongest reasons returned by the detector.</p>
+      </article>
+      <article class="info-card">
+        <div class="info-symbol">03</div>
+        <h3>Safer by design</h3>
+        <p>This interface sends the URL text to the local detector and does not navigate to the submitted website.</p>
+      </article>
+    </section>
+
+    <div class="disclaimer">
+      <strong>Important:</strong> This is a first-line screening tool, not a guarantee of safety. A legitimate-looking URL can still be compromised, and model predictions can be wrong.
+    </div>
+  </main>
+
+  <footer>PhishGuard · ML-Based Phishing URL Detection System · Academic demonstration</footer>
+</body>
+</html>
